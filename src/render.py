@@ -1,4 +1,5 @@
 import matplotlib
+import numpy as np
 
 
 def render(xs, ys, ground_x, ground_y, bounds, fps, output, point_size):
@@ -8,14 +9,15 @@ def render(xs, ys, ground_x, ground_y, bounds, fps, output, point_size):
     from matplotlib.animation import FuncAnimation
 
     x_min, x_max, y_min, y_max = bounds
-    n_frames = xs.shape[0]
+    n_frames, n_balls = xs.shape
+    colors = matplotlib.colormaps["rainbow"](np.linspace(0.0, 1.0, n_balls))
 
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.set_aspect("equal")
     ax.plot(ground_x, ground_y, color="black", lw=2)
-    scat = ax.scatter(xs[0], ys[0], s=point_size)
+    scat = ax.scatter(xs[0], ys[0], s=point_size, c=colors)
     label = ax.text(0.02, 0.95, "", transform=ax.transAxes)
 
     def update(i):
