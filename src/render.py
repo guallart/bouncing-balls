@@ -55,17 +55,17 @@ def pi_formatter(value, _):
     return rf"${sign}{k}\pi/2$"
 
 
-def render(xs, ys, ground_x, ground_y, bounds, fps, output, point_size, title):
-    apply_style()
-    if output:
-        matplotlib.use("Agg")
+def plt_close(fig):
     import matplotlib.pyplot as plt
-    from matplotlib.animation import FFMpegWriter, FuncAnimation
+    plt.close(fig)
+
+
+def build_figure(ground_x, ground_y, bounds, title):
+    apply_style()
+    import matplotlib.pyplot as plt
     from matplotlib.ticker import FuncFormatter, MultipleLocator
 
     x_min, x_max, y_min, y_max = bounds
-    n_frames, n_balls = xs.shape
-    colors = matplotlib.colormaps["rainbow"](np.linspace(0.0, 1.0, n_balls))
 
     fig, ax = plt.subplots(figsize=(WIDTH_IN, HEIGHT_IN), dpi=DPI)
     fig.subplots_adjust(left=0.07, right=0.97, top=0.86, bottom=0.12)
@@ -79,8 +79,10 @@ def render(xs, ys, ground_x, ground_y, bounds, fps, output, point_size, title):
         ax.spines[side].set_visible(False)
     ax.tick_params(length=0, labelsize=13, pad=8)
 
-    ax.xaxis.set_major_locator(MultipleLocator(np.pi / 2))
-    ax.xaxis.set_major_formatter(FuncFormatter(pi_formatter))
+    half_pi_units = [v / (np.pi / 2) for v in (x_min, x_max)]
+    if all(abs(u - round(u)) < 1e-6 for u in half_pi_units):
+        ax.xaxis.set_major_locator(MultipleLocator(np.pi / 2))
+        ax.xaxis.set_major_formatter(FuncFormatter(pi_formatter))
     ax.set_xlabel(r"$x$", fontsize=18)
     ax.set_ylabel(r"$y$", fontsize=18, rotation=0, labelpad=14)
 
@@ -88,11 +90,23 @@ def render(xs, ys, ground_x, ground_y, bounds, fps, output, point_size, title):
     ax.plot(ground_x, ground_y, color=GROUND, lw=6, alpha=0.08, zorder=2)
     ax.plot(ground_x, ground_y, color=GROUND, lw=2, zorder=3)
 
-    scat = ax.scatter(xs[0], ys[0], s=point_size, c=colors,
-                      linewidths=0, alpha=0.95, zorder=4)
-
     if title:
         fig.text(0.07, 0.94, title, fontsize=26, ha="left", va="center")
+    return fig, ax
+
+
+def render(xs, ys, ground_x, ground_y, bounds, fps, output, point_size, title):
+    if output:
+        matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import FFMpegWriter, FuncAnimation
+
+    n_frames, n_balls = xs.shape
+    colors = matplotlib.colormaps["rainbow"](np.linspace(0.0, 1.0, n_balls))
+
+    fig, ax = build_figure(ground_x, ground_y, bounds, title)
+    scat = ax.scatter(xs[0], ys[0], s=point_size, c=colors,
+                      linewidths=0, alpha=0.95, zorder=4)
     label = ax.text(1.0, 1.04, "", transform=ax.transAxes, fontsize=20,
                     ha="right", va="bottom", color=MUTED)
 

@@ -1,8 +1,10 @@
 from std.math import sqrt
+from std.python import Python
 from max.gpu import global_idx
 from max.gpu.host import DeviceContext, DeviceBuffer, HostBuffer
 from .animator import Animator
-from .ball import GRAVITY, RESTITUTION, MAX_BOUNCES
+from .pyutil import ground_arrays
+from .ball import GRAVITY, RESTITUTION, MAX_BOUNCES, FloatFn
 
 comptime FP = DType.float32
 comptime Real = Scalar[FP]
@@ -107,6 +109,69 @@ def _update_kernel[
     vy[unsafe_offset=i] = pvy
 
 
+def _splat_kernel(
+    x: Pointer[Real, MutAnyOrigin],
+    y: Pointer[Real, MutAnyOrigin],
+    lut: Pointer[Real, MutAnyOrigin],
+    bg: Pointer[UInt8, MutAnyOrigin],
+    frame: Pointer[UInt8, MutAnyOrigin],
+    n: Int32,
+    width: Int32,
+    height: Int32,
+    ax: Real,
+    bx: Real,
+    ay: Real,
+    by: Real,
+    clip_l: Real,
+    clip_r: Real,
+    clip_t: Real,
+    clip_b: Real,
+    radius: Real,
+    alpha: Real,
+):
+    var i = Int(global_idx.x)
+    if i >= Int(n):
+        return
+
+    var cx = x[unsafe_offset=i] * ax + bx
+    var cy = y[unsafe_offset=i] * ay + by
+    if cx < clip_l or cx > clip_r or cy < clip_t or cy > clip_b:
+        return
+
+    var denom = Real(max(Int(n) - 1, 1))
+    var li = Int(Real(i) / denom * 255.0 + 0.5)
+    var cr = lut[unsafe_offset=3 * li] * 255.0
+    var cg = lut[unsafe_offset=3 * li + 1] * 255.0
+    var cb = lut[unsafe_offset=3 * li + 2] * 255.0
+
+    var reach = Int(radius) + 1
+    var ix = Int(cx)
+    var iy = Int(cy)
+    var w = Int(width)
+    var h = Int(height)
+    for dy in range(-reach, reach + 1):
+        for dx in range(-reach, reach + 1):
+            var px = ix + dx
+            var py = iy + dy
+            if px < 0 or px >= w or py < 0 or py >= h:
+                continue
+            var ox = Real(px) + 0.5 - cx
+            var oy = Real(py) + 0.5 - cy
+            if sqrt(ox * ox + oy * oy) > radius:
+                continue
+            var a = alpha
+            var o = (py * w + px) * 3
+            frame[unsafe_offset=o] = UInt8(
+                Real(bg[unsafe_offset=o]) * (1.0 - a) + cr * a + 0.5
+            )
+            frame[unsafe_offset=o + 1] = UInt8(
+                Real(bg[unsafe_offset=o + 1]) * (1.0 - a) + cg * a + 0.5
+            )
+            frame[unsafe_offset=o + 2] = UInt8(
+                Real(bg[unsafe_offset=o + 2]) * (1.0 - a) + cb * a + 0.5
+            )
+
+
 struct GpuSimulation:
     var ctx: DeviceContext[]
     var n: Int
@@ -174,3 +239,96 @@ struct GpuSimulation:
                 block_dim=BLOCK_SIZE,
             )
         self.ctx.synchronize()
+
+    def record[
+        ground_gpu: GpuFn, ground_host: FloatFn
+    ](
+        mut self,
+        output: String,
+        title: String,
+        x_min: Float64,
+        x_max: Float64,
+        y_min: Float64,
+        y_max: Float64,
+        fps: Int,
+        frames: Int,
+        steps_per_frame: Int,
+        dt: Float64,
+        point_radius: Float64 = 2.0,
+        opacity: Float64 = 0.95,
+    ) raises:
+        var np = Python.import_module("numpy")
+        var ctypes = Python.import_module("ctypes")
+        Python.add_to_path("src")
+        var video = Python.import_module("video")
+
+        var ground_xy = ground_arrays[ground_host](x_min, x_max, 400)
+        var bounds = Python.tuple(x_min, x_max, y_min, y_max)
+        var scene = video.Scene(ground_xy[0], ground_xy[1], bounds, title)
+
+        var width = Int(py=scene.width)
+        var height = Int(py=scene.height)
+        var nbytes = width * height * 3
+        var affine = scene.affine
+        var clip = scene.clip
+
+        var bg = self.ctx.enqueue_create_buffer[DType.uint8](nbytes)
+        var frame = self.ctx.enqueue_create_buffer[DType.uint8](nbytes)
+        var host_bg = self.ctx.enqueue_create_host_buffer[DType.uint8](nbytes)
+        var host_frame = self.ctx.enqueue_create_host_buffer[DType.uint8](nbytes)
+        var lut = self.ctx.enqueue_create_buffer[FP](256 * 3)
+        var host_lut = self.ctx.enqueue_create_host_buffer[FP](256 * 3)
+
+        ctypes.memmove(Int(host_bg.unsafe_ptr()), Int(py=scene.bg.ctypes.data), nbytes)
+        ctypes.memmove(Int(host_lut.unsafe_ptr()), Int(py=scene.lut.ctypes.data), 256 * 3 * 4)
+        self.ctx.enqueue_copy(bg, host_bg)
+        self.ctx.enqueue_copy(lut, host_lut)
+        self.ctx.synchronize()
+
+        var advance = self.ctx.compile_function[_update_kernel[ground_gpu]]()
+        var splat = self.ctx.compile_function[_splat_kernel]()
+        var blocks = (self.n + BLOCK_SIZE - 1) // BLOCK_SIZE
+
+        var writer = video.VideoWriter(scene, output, fps)
+        for f in range(frames):
+            self.ctx.enqueue_copy(frame, bg)
+            self.ctx.enqueue_function(
+                splat,
+                self.x,
+                self.y,
+                lut,
+                bg,
+                frame,
+                Int32(self.n),
+                Int32(width),
+                Int32(height),
+                Real(Float64(py=affine[0])),
+                Real(Float64(py=affine[1])),
+                Real(Float64(py=affine[2])),
+                Real(Float64(py=affine[3])),
+                Real(Float64(py=clip[0])),
+                Real(Float64(py=clip[1])),
+                Real(Float64(py=clip[2])),
+                Real(Float64(py=clip[3])),
+                Real(point_radius),
+                Real(opacity),
+                grid_dim=blocks,
+                block_dim=BLOCK_SIZE,
+            )
+            self.ctx.enqueue_copy(host_frame, frame)
+            if f < frames - 1:
+                self.ctx.enqueue_function(
+                    advance,
+                    self.x,
+                    self.y,
+                    self.vx,
+                    self.vy,
+                    Int32(self.n),
+                    Int32(steps_per_frame),
+                    Real(dt),
+                    grid_dim=blocks,
+                    block_dim=BLOCK_SIZE,
+                )
+            self.ctx.synchronize()
+            writer.write(Int(host_frame.unsafe_ptr()), f)
+        writer.close()

@@ -1,23 +1,22 @@
 from std.math import round
-from src.animator import Animator
 from src.gpu_sim import GpuSimulation
 
 from std import math
 
-comptime BALL_COUNT = 100000
+comptime BALL_COUNT = 1000000
 comptime FINAL_TIME = 30.0
 comptime DT = 0.01
 comptime FPS = 25
 comptime STEPS_PER_FRAME = Int(round(1.0 / (Float64(FPS) * DT)))
 
-comptime X_MIN = -math.pi * 1.5
-comptime X_MAX = math.pi * 0.5
-comptime Y_MIN = -1.1
-comptime Y_MAX = 2.0
+comptime X_MIN = -2.0
+comptime X_MAX = 2.0
+comptime Y_MIN = -0.3
+comptime Y_MAX = 1.55
 
 
 def ground[dtype: DType](x: Scalar[dtype]) -> Scalar[dtype] where dtype.is_floating_point():
-    return math.sin(x)
+    return x*x
 
 
 def main() raises:
@@ -29,10 +28,16 @@ def main() raises:
         y0.append(1.0)
 
     var sim = GpuSimulation(x0, y0)
-    var anim = Animator(BALL_COUNT, FPS, X_MIN, X_MAX, Y_MIN, Y_MAX)
-
     var frames = Int(FINAL_TIME * Float64(FPS))
-    sim.run[ground[DType.float32]](anim, frames, STEPS_PER_FRAME, DT)
-
-    # anim.render[ground[DType.float64]]("balls.mp4")
-    anim.render[ground[DType.float64]]()
+    sim.record[ground[DType.float32], ground[DType.float64]](
+        "balls.webm",
+        r"$y = x^2$",
+        X_MIN,
+        X_MAX,
+        Y_MIN,
+        Y_MAX,
+        FPS,
+        frames,
+        STEPS_PER_FRAME,
+        DT,
+    )

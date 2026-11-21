@@ -1,5 +1,6 @@
 from std.python import Python, PythonObject
 from .ball import Ball, FloatFn
+from .pyutil import to_numpy, ground_arrays
 
 
 struct Animator:
@@ -51,18 +52,12 @@ struct Animator:
         point_size: Float64 = 6.0,
     ) raises:
         var np = Python.import_module("numpy")
-        var xs = self._to_numpy(np, self.xs, self.n_frames, self.n_balls)
-        var ys = self._to_numpy(np, self.ys, self.n_frames, self.n_balls)
+        var xs = to_numpy(np, self.xs, self.n_frames, self.n_balls)
+        var ys = to_numpy(np, self.ys, self.n_frames, self.n_balls)
 
-        var n_ground = 400
-        var gx = List[Float64]()
-        var gy = List[Float64]()
-        for i in range(n_ground):
-            var x = self.x_min + (self.x_max - self.x_min) * Float64(i) / Float64(n_ground - 1)
-            gx.append(x)
-            gy.append(ground(x))
-        var gxn = self._to_numpy(np, gx, 1, n_ground).reshape(n_ground)
-        var gyn = self._to_numpy(np, gy, 1, n_ground).reshape(n_ground)
+        var ground_xy = ground_arrays[ground](self.x_min, self.x_max, 400)
+        var gxn = ground_xy[0]
+        var gyn = ground_xy[1]
 
         var bounds = Python.tuple(self.x_min, self.x_max, self.y_min, self.y_max)
 
@@ -71,11 +66,3 @@ struct Animator:
         render.render(
             xs, ys, gxn, gyn, bounds, self.fps, output, point_size, title
         )
-
-    @staticmethod
-    def _to_numpy(np: PythonObject, data: List[Float64], rows: Int, cols: Int) raises -> PythonObject:
-        var ctypes = Python.import_module("ctypes")
-        var address = Int(data.unsafe_ptr())
-        var c_ptr = ctypes.cast(address, ctypes.POINTER(ctypes.c_double))
-        var view = np.ctypeslib.as_array(c_ptr, shape=Python.tuple(rows * cols))
-        return np.array(view, copy=True).reshape(Python.tuple(rows, cols))
