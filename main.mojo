@@ -9,14 +9,14 @@ comptime DT = 0.01
 comptime FPS = 25
 comptime STEPS_PER_FRAME = Int(round(1.0 / (Float64(FPS) * DT)))
 
-comptime X_MIN = -5.0
-comptime X_MAX = 5.0
-comptime Y_MIN = -0.95
-comptime Y_MAX = 1.25
+comptime X_MIN = -1.62
+comptime X_MAX = 1.62
+comptime Y_MIN = -0.2
+comptime Y_MAX = 1.3
 
 
 def ground[dtype: DType](x: Scalar[dtype]) -> Scalar[dtype] where dtype.is_floating_point():
-    return 0.5 * math.sin(2 * x) + 0.25 * math.cos(3 * x)
+    return (x * x - 1) * (x * x - 1)
 
 
 def main() raises:
@@ -30,8 +30,8 @@ def main() raises:
     var sim = GpuSimulation(x0, y0)
     var frames = Int(FINAL_TIME * Float64(FPS))
     sim.record[ground[DType.float32], ground[DType.float64]](
-        "outputs/rolling_hills.webm",
-        r"$y = \frac{1}{2}\sin(2x) + \frac{1}{4}\cos(3x)$",
+        "outputs/double_well.webm",
+        r"$y = (x^2 - 1)^2$",
         X_MIN,
         X_MAX,
         Y_MIN,
