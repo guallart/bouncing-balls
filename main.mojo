@@ -6,10 +6,15 @@ from src.animator import Animator
 from std import math
 
 comptime BALL_COUNT = 1000
-comptime FINAL_TIME = 10.0
+comptime FINAL_TIME = 30.0
 comptime DT = 0.01
 comptime FPS = 25
 comptime STEPS_PER_FRAME = Int(round(1.0 / (Float64(FPS) * DT)))
+
+comptime X_MIN = -math.pi * 1.5
+comptime X_MAX = math.pi * 0.5
+comptime Y_MIN = -1.1
+comptime Y_MAX = 2.0
 
 
 def ground(x: Float64) -> Float64:
@@ -24,9 +29,7 @@ def main() raises:
         var vel = Vec2(0, 0)
         balls.append(Ball(pos^, vel^))
 
-    var x_min, x_max = -5.0, 5.0
-    var y_min, y_max = -1.5, 2.0
-    var anim = Animator(BALL_COUNT, FPS, x_min, x_max, y_min, y_max)
+    var anim = Animator(BALL_COUNT, FPS, X_MIN, X_MAX, Y_MIN, Y_MAX)
 
     var time = 0.0
     var step = 0
