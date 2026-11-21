@@ -1,11 +1,10 @@
 from std.math import round
-from src.vec2 import Vec2
-from src.ball import Ball
 from src.animator import Animator
+from src.gpu_sim import GpuSimulation
 
 from std import math
 
-comptime BALL_COUNT = 10000
+comptime BALL_COUNT = 100000
 comptime FINAL_TIME = 30.0
 comptime DT = 0.01
 comptime FPS = 25
@@ -17,29 +16,23 @@ comptime Y_MIN = -1.1
 comptime Y_MAX = 2.0
 
 
-def ground(x: Float64) -> Float64:
+def ground[dtype: DType](x: Scalar[dtype]) -> Scalar[dtype] where dtype.is_floating_point():
     return math.sin(x)
 
 
 def main() raises:
-    var balls = List[Ball](capacity=BALL_COUNT)
+    var x0 = List[Float64](capacity=BALL_COUNT)
+    var y0 = List[Float64](capacity=BALL_COUNT)
     for i in range(BALL_COUNT):
         var t = Float64(i) / Float64(BALL_COUNT - 1)
-        var pos = Vec2(t * 2 - 1, 1)
-        var vel = Vec2(0, 0)
-        balls.append(Ball(pos^, vel^))
+        x0.append(t * 2 - 1)
+        y0.append(1.0)
 
+    var sim = GpuSimulation(x0, y0)
     var anim = Animator(BALL_COUNT, FPS, X_MIN, X_MAX, Y_MIN, Y_MAX)
 
-    var time = 0.0
-    var step = 0
-    while time < FINAL_TIME:
-        if step % STEPS_PER_FRAME == 0:
-            anim.capture(balls)
-        for ref ball in balls:
-            ball.update[ground](DT)
-        time += DT
-        step += 1
+    var frames = Int(FINAL_TIME * Float64(FPS))
+    sim.run[ground[DType.float32]](anim, frames, STEPS_PER_FRAME, DT)
 
-    # anim.render[ground]("balls.mp4")
-    anim.render[ground]()
+    # anim.render[ground[DType.float64]]("balls.mp4")
+    anim.render[ground[DType.float64]]()

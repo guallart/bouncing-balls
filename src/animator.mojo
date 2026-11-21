@@ -38,6 +38,12 @@ struct Animator:
             self.ys.append(ball.pos.y)
         self.n_frames += 1
 
+    def capture_xy(mut self, x: List[Float64], y: List[Float64]):
+        for i in range(len(x)):
+            self.xs.append(x[i])
+            self.ys.append(y[i])
+        self.n_frames += 1
+
     def render[ground: FloatFn](
         self,
         output: String = "",
