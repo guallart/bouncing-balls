@@ -5,7 +5,7 @@ from src.animator import Animator
 
 from std import math
 
-comptime BALL_COUNT = 1000
+comptime BALL_COUNT = 10000
 comptime FINAL_TIME = 30.0
 comptime DT = 0.01
 comptime FPS = 25

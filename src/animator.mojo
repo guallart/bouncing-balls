@@ -38,7 +38,12 @@ struct Animator:
             self.ys.append(ball.pos.y)
         self.n_frames += 1
 
-    def render[ground: FloatFn](self, output: String = "", point_size: Float64 = 4.0) raises:
+    def render[ground: FloatFn](
+        self,
+        output: String = "",
+        title: String = "",
+        point_size: Float64 = 6.0,
+    ) raises:
         var np = Python.import_module("numpy")
         var xs = self._to_numpy(np, self.xs, self.n_frames, self.n_balls)
         var ys = self._to_numpy(np, self.ys, self.n_frames, self.n_balls)
@@ -57,7 +62,9 @@ struct Animator:
 
         Python.add_to_path("src")
         var render = Python.import_module("render")
-        render.render(xs, ys, gxn, gyn, bounds, self.fps, output, point_size)
+        render.render(
+            xs, ys, gxn, gyn, bounds, self.fps, output, point_size, title
+        )
 
     @staticmethod
     def _to_numpy(np: PythonObject, data: List[Float64], rows: Int, cols: Int) raises -> PythonObject:
