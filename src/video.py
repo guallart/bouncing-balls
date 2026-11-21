@@ -1,4 +1,5 @@
 import ctypes
+import os
 import subprocess
 
 import matplotlib
@@ -67,6 +68,7 @@ class VideoWriter:
         self.scene = scene
         self.fps = fps
         self.nbytes = scene.width * scene.height * 3
+        os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
         if str(output).lower().endswith(".webm"):
             encode = ["-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0",
                       "-row-mt", "1", "-deadline", "good", "-cpu-used", "4",

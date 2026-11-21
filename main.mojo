@@ -30,7 +30,7 @@ def main() raises:
     var sim = GpuSimulation(x0, y0)
     var frames = Int(FINAL_TIME * Float64(FPS))
     sim.record[ground[DType.float32], ground[DType.float64]](
-        "balls.webm",
+        "outputs/balls.webm",
         r"$y = x^2$",
         X_MIN,
         X_MAX,

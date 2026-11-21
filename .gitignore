@@ -7,6 +7,8 @@ __pycache__/
 *.pyc
 
 # Generated output
+outputs/
 *.mp4
+*.webm
 *.gif
 bouncing
