@@ -15,8 +15,8 @@ LABEL_WIDTH, LABEL_HEIGHT = 380, 64
 
 
 class Scene:
-    def __init__(self, ground_x, ground_y, bounds, title, cmap="rainbow"):
-        fig, ax = style.build_figure(ground_x, ground_y, bounds, title)
+    def __init__(self, ground_x, ground_y, bounds, title, note="", cmap="rainbow"):
+        fig, ax = style.build_figure(ground_x, ground_y, bounds, title, note)
         fig.canvas.draw()
         rgba = np.asarray(fig.canvas.buffer_rgba())
         self.height, self.width = rgba.shape[:2]

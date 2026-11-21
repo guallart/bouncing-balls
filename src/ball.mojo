@@ -4,7 +4,7 @@ from .vec2 import Vec2
 comptime FloatFn = def(Float64) thin -> Float64
 
 comptime GRAVITY = Vec2(0.0, -1.0)
-comptime RESTITUTION = 1.0
+comptime RESTITUTION = 0.9
 comptime EPS = 1e-5
 comptime MAX_BOUNCES = 8
 comptime BISECTION_ITERS = 50

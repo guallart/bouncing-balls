@@ -60,7 +60,7 @@ def plt_close(fig):
     plt.close(fig)
 
 
-def build_figure(ground_x, ground_y, bounds, title):
+def build_figure(ground_x, ground_y, bounds, title, note=""):
     apply_style()
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FuncFormatter, MultipleLocator
@@ -92,6 +92,9 @@ def build_figure(ground_x, ground_y, bounds, title):
 
     if title:
         fig.text(0.07, 0.94, title, fontsize=26, ha="left", va="center")
+    if note:
+        ax.text(0.86, 1.04, note, transform=ax.transAxes, fontsize=20,
+                ha="right", va="bottom", color=MUTED)
     return fig, ax
 
 

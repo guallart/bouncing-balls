@@ -9,17 +9,14 @@ comptime DT = 0.01
 comptime FPS = 25
 comptime STEPS_PER_FRAME = Int(round(1.0 / (Float64(FPS) * DT)))
 
-comptime X_MIN = -1.83
-comptime X_MAX = 1.83
-comptime Y_MIN = -0.1
-comptime Y_MAX = 1.6
+comptime X_MIN = -1.62
+comptime X_MAX = 1.62
+comptime Y_MIN = -0.2
+comptime Y_MAX = 1.3
 
 
 def ground[dtype: DType](x: Scalar[dtype]) -> Scalar[dtype] where dtype.is_floating_point():
-    var d = 2.25 - x * x
-    if d < 0:
-        d = 0
-    return 1.5 - math.sqrt(d)
+    return 0.5 * x * x + 0.06 * math.sin(12 * x * x)
 
 
 def main() raises:
@@ -33,8 +30,8 @@ def main() raises:
     var sim = GpuSimulation(x0, y0)
     var frames = Int(FINAL_TIME * Float64(FPS))
     sim.record[ground[DType.float32], ground[DType.float64]](
-        "outputs/semicircle.webm",
-        r"$y = \frac{3}{2} - \sqrt{\frac{9}{4} - x^2}$",
+        "outputs/chirp_bowl_e09.webm",
+        r"$y = \frac{x^2}{2} + 0.06\,\sin(12x^2)$",
         X_MIN,
         X_MAX,
         Y_MIN,

@@ -264,7 +264,8 @@ struct GpuSimulation:
 
         var ground_xy = ground_arrays[ground_host](x_min, x_max, 4000)
         var bounds = Python.tuple(x_min, x_max, y_min, y_max)
-        var scene = video.Scene(ground_xy[0], ground_xy[1], bounds, title)
+        var note = String("Coefficient of restitution  $e = ") + String(RESTITUTION) + "$"
+        var scene = video.Scene(ground_xy[0], ground_xy[1], bounds, title, note)
 
         var width = Int(py=scene.width)
         var height = Int(py=scene.height)
