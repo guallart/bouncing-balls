@@ -55,7 +55,7 @@ struct Animator:
         var xs = to_numpy(np, self.xs, self.n_frames, self.n_balls)
         var ys = to_numpy(np, self.ys, self.n_frames, self.n_balls)
 
-        var ground_xy = ground_arrays[ground](self.x_min, self.x_max, 400)
+        var ground_xy = ground_arrays[ground](self.x_min, self.x_max, 4000)
         var gxn = ground_xy[0]
         var gyn = ground_xy[1]
 

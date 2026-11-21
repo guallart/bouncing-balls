@@ -262,7 +262,7 @@ struct GpuSimulation:
         Python.add_to_path("src")
         var video = Python.import_module("video")
 
-        var ground_xy = ground_arrays[ground_host](x_min, x_max, 400)
+        var ground_xy = ground_arrays[ground_host](x_min, x_max, 4000)
         var bounds = Python.tuple(x_min, x_max, y_min, y_max)
         var scene = video.Scene(ground_xy[0], ground_xy[1], bounds, title)
 
